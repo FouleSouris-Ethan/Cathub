@@ -1,17 +1,21 @@
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from .database import Base, get_db, engine
-from .models import OrganizationModel, User, CatModel
+from .models import AdoptionApplication, CatModel, OrganizationModel, User
 from .schemas import (
+    Application, ApplicationCreate, ApplicationStatusUpdate,
+    Cat, CatCreate,
     OrganizationCreate, Organization as OrgSchema,
-    UserCreate, User as UserSchema, Token,
-    Cat, CatCreate
+    Token,
+    UserCreate, User as UserSchema,
 )
 from .auth import (
-    hash_password, verify_password, 
-    create_access_token, get_current_user
+    create_access_token, get_current_user,
+    hash_password, verify_password,
 )
 
 app = FastAPI()
@@ -60,7 +64,7 @@ def get_me(current_user: User = Depends(get_current_user)):
 def create_organization(org: OrganizationCreate, db: Session = Depends(get_db)):
     existing = db.query(OrganizationModel).filter(OrganizationModel.email == org.email).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Organization already exists")
+        raise HTTPException(status_code=400, detail="Organisation existe déjà")
     new_org = OrganizationModel(**org.dict())
     db.add(new_org)
     db.commit()
@@ -129,7 +133,7 @@ def update_cat(org_id: str, cat_id: str, cat: CatCreate, db: Session = Depends(g
         CatModel.organization_id == org_id,
     ).first()
     if not existing:
-        raise HTTPException(status_code=404, detail="Cat not found")
+        raise HTTPException(status_code=404, detail="Chat introuvable")
     for key, value in cat.dict().items():
         setattr(existing, key, value)
     db.commit()
@@ -150,76 +154,97 @@ def delete_cat(org_id: str, cat_id: str, db: Session = Depends(get_db), current_
     db.delete(cat)
     db.commit()
     return {"message": "Cat supprimé avec succès"}
-def list_cats(
-    org_id: str, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.organization_id != org_id:
-        raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
-    org = db.query(OrganizationModel).filter(OrganizationModel.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organisation introuvable")
-    return db.query(CatModel).filter(CatModel.organization_id == org_id).all()
 
-#Recupérer un chat par ID
-@app.get("/organizations/{org_id}/cats/{cat_id}", response_model=Cat)
-def get_cat(
-    org_id: str, 
+# Routes Adoption Application
+@app.post("/cats/{cat_id}/apply", response_model=Application)
+def apply_for_cat(
     cat_id: str, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    application: ApplicationCreate, 
+    db: Session = Depends(get_db)
 ):
-    if current_user.organization_id != org_id:
-        raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
-    cat = db.query(CatModel).filter(
-        CatModel.id == cat_id,
-        CatModel.organization_id == org_id,
-    ).first()
+    cat = db.query(CatModel).filter(CatModel.id == cat_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Chat introuvable")
-    return cat
+    if cat.status not in ["disponible", "available"]:
+        raise HTTPException(status_code=400, detail="Ce chat n'est plus disponible à l'adoption")
+    
+    new_appplication = AdoptionApplication(
+        **application.dict(), 
+        cat_id=cat_id, 
+        organization_id=cat.organization_id,
+        created_at=datetime.utcnow().isoformat()
+    )
+    db.add(new_appplication)
+    
+    #on passe le chat en réservé
+    cat.status = "réservé"
 
-#Mettre à jour un chat
-@app.put("/organizations/{org_id}/cats/{cat_id}", response_model=Cat)
-def update_cat(
+    db.commit()
+    db.refresh(new_appplication)
+    return new_appplication
+
+#Routes protégée - bénévoles seulement
+@app.get("/organizations/{org_id}/applications", response_model=list[Application])
+def list_applications(
     org_id: str, 
-    cat_id: str, 
-    cat: CatCreate, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     if current_user.organization_id != org_id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
-    existing = db.query(CatModel).filter(
-        CatModel.id == cat_id,
-        CatModel.organization_id == org_id,
-    ).first()
-    if not existing:
-        raise HTTPException(status_code=404, detail="Cat not found")
-    for key, value in cat.dict().items():
-        setattr(existing, key, value)
-    db.commit()
-    db.refresh(existing)
-    return existing
+    return db.query(AdoptionApplication).filter(
+        AdoptionApplication.organization_id == org_id
+    ).all()
 
-#Supprimer un chat
-@app.delete("/organizations/{org_id}/cats/{cat_id}")
-def delete_cat(
+#avoir un dossier spécifique par ID
+@app.get("/organizations/{org_id}/applications/{app_id}", response_model=Application)
+def get_application(
     org_id: str, 
-    cat_id: str, 
+    app_id: str, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     if current_user.organization_id != org_id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
-    cat = db.query(CatModel).filter(
-        CatModel.id == cat_id,
-        CatModel.organization_id == org_id,
+    application = db.query(AdoptionApplication).filter(
+        AdoptionApplication.id == app_id,
+        AdoptionApplication.organization_id == org_id
     ).first()
-    if not cat:
-        raise HTTPException(status_code=404, detail="Cat introuvable")
-    db.delete(cat)
-    db.commit()
-    return {"message": "Cat supprimé avec succès"}
+    if not application:
+        raise HTTPException(status_code=404, detail="Dossier introuvable")
+    return application
 
+#valider ou rejeter un dossier
+@app.put("/organizations/{org_id}/applications/{app_id}", response_model=Application)
+def update_application_status(
+    org_id: str, 
+    app_id: str, 
+    status_update: ApplicationStatusUpdate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
+    application = db.query(AdoptionApplication).filter(
+        AdoptionApplication.id == app_id,
+        AdoptionApplication.organization_id == org_id
+    ).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Dossier introuvable")
+    
+    if status_update.status not in ["en attente", "approuvé", "rejeté"]:
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    
+    application.status = status_update.status
+
+    #si approuvé, on passe le chat en adopté
+    #si refusé on remet le chat en disponible
+    cat = db.query(CatModel).filter(CatModel.id == application.cat_id).first()
+    if status_update.status == "approuvé":
+            cat.status = "adopté"
+    elif status_update.status == "rejeté":
+        cat.status = "disponible"
+
+    db.commit()
+    db.refresh(application)
+    return application
