@@ -1,4 +1,4 @@
-const API_URL = "http://161.35.198.201"
+const API_URL = "http://localhost:8000"
 
 // Récupère le token stocké
 const getToken = () => localStorage.getItem("token")

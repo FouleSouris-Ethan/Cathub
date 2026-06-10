@@ -38,7 +38,8 @@ async function loadCats() {
         <tr>
             <td>${cat.name}</td>
             <td>${cat.age} ans</td>
-            <td>${cat.breed || "—"}</td>
+            <td>${cat.race || "—"}</td>
+            <td>${cat.description || "—"}</td>
             <td><span class="badge ${cat.status}">${cat.status}</span></td>
             <td>
                 <button class="action-btn danger" onclick="handleDeleteCat('${cat.id}')">
@@ -54,8 +55,8 @@ async function handleCreateCat() {
     const cat = {
         name: document.getElementById("cat-name").value,
         age: parseInt(document.getElementById("cat-age").value),
-        breed: document.getElementById("cat-breed").value,
-        description: document.getElementById("cat-description").value,
+        race: document.getElementById("cat-race").value || null,
+        description: document.getElementById("cat-description").value || null,
         status: "disponible"
     }
     try {
