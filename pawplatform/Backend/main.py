@@ -111,9 +111,7 @@ def create_cat(
 
 #Lister tous les chats
 @app.get("/organizations/{org_id}/cats", response_model=list[Cat])
-def list_cats(org_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.organization_id != org_id:
-        raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
+def list_cats(org_id: str, db: Session = Depends(get_db)):
     org = db.query(OrganizationModel).filter(OrganizationModel.id == org_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organisation introuvable")

@@ -84,8 +84,8 @@
         .badge.réservé { background: #fef9c3; color: #ca8a04; }
         .badge.adopté { background: #e0e7ff; color: #4f46e5; }
         .badge.en_attente { background: #fef9c3; color: #ca8a04; }
-        .badge.validé { background: #dcfce7; color: #16a34a; }
-        .badge.refusé { background: #fee2e2; color: #dc2626; }
+        .badge.approuvé { background: #dcfce7; color: #16a34a; }
+        .badge.rejeté { background: #fee2e2; color: #dc2626; }
 
         .action-btn {
             padding: 0.3rem 0.7rem;
@@ -152,6 +152,26 @@
             color: white;
             border-color: #4f46e5;
         }
+        .detail-section {
+            margin-bottom: 1rem;
+        }
+        .detail-section h4 {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .detail-section p {
+            font-size: 0.95rem;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
 
     </style>
 </head>
@@ -169,33 +189,33 @@
     <div class="content">
 
         <!-- Onglet Chats -->
-<div id="tab-cats">
-    <div class="toolbar">
-        <h2>Chats</h2>
-        <button class="btn-primary" onclick="openModal()">+ Ajouter un chat</button>
-    </div>
-    <div class="filters">
-        <button class="filter-btn active" onclick="filterCats('tous')">Tous</button>
-        <button class="filter-btn" onclick="filterCats('disponible')">Disponibles</button>
-        <button class="filter-btn" onclick="filterCats('réservé')">Réservés</button>
-        <button class="filter-btn" onclick="filterCats('adopté')">Adoptés</button>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Âge</th>
-                <th>Race</th>
-                <th>Description</th>
-                <th>Statut</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="cats-list">
-            <tr><td colspan="6">Chargement...</td></tr>
-        </tbody>
-    </table>
-</div>
+        <div id="tab-cats">
+            <div class="toolbar">
+                <h2>Chats</h2>
+                    <button class="btn-primary" onclick="openModal()">+ Ajouter un chat</button>
+            </div>
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterCats('tous')">Tous</button>
+                <button class="filter-btn" onclick="filterCats('disponible')">Disponibles</button>
+                <button class="filter-btn" onclick="filterCats('réservé')">Réservés</button>
+                <button class="filter-btn" onclick="filterCats('adopté')">Adoptés</button>
+        </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Âge</th>
+                        <th>Race</th>
+                        <th>Description</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            <tbody id="cats-list">
+                <tr><td colspan="6">Chargement...</td></tr>
+            </tbody>
+        </table>
+        </div>
 
         <!-- Onglet Dossiers -->
         <div id="tab-applications" style="display:none">
@@ -217,7 +237,19 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
+    <!-- Modal détail dossier -->
+    <div class="modal-overlay" id="modal-detail">
+        <div class="modal">
+            <h3>Dossier d'adoption</h3>
+       
+            <div id="detail-content"></div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeDetailModal()">Fermer</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal ajout chat -->

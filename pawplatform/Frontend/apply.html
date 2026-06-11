@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawPlatform — Formulaire d'adoption</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; }
+
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 1.2rem; }
+
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .cat-info {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .cat-info h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+        .cat-info p { color: #666; font-size: 0.9rem; }
+
+        h2 { margin-bottom: 1.5rem; font-size: 1.2rem; }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            margin-top: 0.75rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            padding: 0;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1.5rem;
+        }
+        .btn-primary:hover { background: #4338ca; }
+
+        .success {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        .success h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .success p { color: #666; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PawPlatform</h1>
+    </header>
+
+    <div class="container">
+        <div class="card">
+
+            <!-- Infos du chat -->
+            <div class="cat-info" id="cat-info">
+                Chargement...
+            </div>
+
+            <!-- Formulaire -->
+            <div id="form-section">
+                <h2>Votre dossier d'adoption</h2>
+
+                <label>Prénom</label>
+                <input type="text" id="first-name" placeholder="Jean" />
+
+                <label>Nom</label>
+                <input type="text" id="last-name" placeholder="Dupont" />
+
+                <label>Email</label>
+                <input type="email" id="email" placeholder="jean@email.com" />
+
+                <label>Téléphone</label>
+                <input type="tel" id="phone" placeholder="06 12 34 56 78" />
+
+                <label>Adresse</label>
+                <input type="text" id="address" placeholder="12 rue des Lilas, Paris" />
+
+                <label>Type de logement</label>
+                <select id="housing-type">
+                    <option value="appartement">Appartement</option>
+                    <option value="maison">Maison</option>
+                </select>
+
+                <label>Votre situation</label>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="has-garden" />
+                        J'ai un jardin
+                    </label>
+                    <label>
+                        <input type="checkbox" id="has-children" />
+                        J'ai des enfants
+                    </label>
+                    <label>
+                        <input type="checkbox" id="has-other-pets" />
+                        J'ai déjà des animaux
+                    </label>
+                    <label>
+                        <input type="checkbox" id="first-cat" />
+                        C'est mon premier chat
+                    </label>
+                </div>
+
+                <label>Pourquoi souhaitez-vous adopter ce chat ?</label>
+                <textarea id="motivation" placeholder="Décrivez votre situation et vos motivations..."></textarea>
+
+                <button class="btn-primary" onclick="handleSubmit()">Envoyer mon dossier</button>
+            </div>
+
+            <!-- Message de succès -->
+            <div class="success" id="success">
+                <h3>🎉 Dossier envoyé !</h3>
+                <p>L'association va étudier votre candidature et vous recontactera par email.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/apply.js"></script>
+</body>
+</html>

@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:8000"
+const API_URL = window.location.hostname == "localhost"
+    ? "http://localhost:8000"
+    : "/api"
 
 // Récupère le token stocké
 const getToken = () => localStorage.getItem("token")
@@ -82,5 +84,17 @@ const api = {
         })
         if (!response.ok) throw new Error("Erreur mise à jour")
         return response.json()
-    }
+    },
+
+    async applyForCat(catId, application) {
+        const response = await fetch(`${API_URL}/cats/${catId}/apply`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(application)
+        })
+        if (!response.ok) throw new Error("Erreur envoi dossier")
+            return response.json()
+    },
 }
+
+    

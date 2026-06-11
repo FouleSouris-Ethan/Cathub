@@ -161,17 +161,91 @@ async function loadApplications() {
             <td>${app.housing_type}</td>
             <td><span class="badge ${app.status}">${app.status}</span></td>
             <td>
-                ${app.status === "en_attente" ? `
-                    <button class="action-btn success" onclick="handleUpdateStatus('${app.id}', 'validé')">
+                <button class="action-btn" onclick="openDetailModal('${app.id}')">
+                    Voir
+                </button>
+                ${app.status === "en attente" ? `
+                    <button class="action-btn success" onclick="handleUpdateStatus('${app.id}', 'approuvé')">
                         Valider
                     </button>
-                    <button class="action-btn danger" onclick="handleUpdateStatus('${app.id}', 'refusé')">
+                    <button class="action-btn danger" onclick="handleUpdateStatus('${app.id}', 'rejeté')">
                         Refuser
                     </button>
-                ` : "—"}
+                ` : "-"}
             </td>
         </tr>
     `).join("")
+}
+
+// Voir le detail d'un dossier
+async function openDetailModal(appId) {
+    const apps= await api.getApplications(orgId)
+    const app = apps.find(a => a.id == appId)
+
+    const content = document.getElementById("detail-content")
+    content.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h4>Prénom</h4>
+                <p>${app.first_name}</p>
+            </div>
+            <div class="detail-section">
+                <h4>Nom</h4>
+                <p>${app.last_name}</p>
+            </div>
+            <div class="detail-section">
+                <h4>Email</h4>
+                <p>${app.email}</p>
+            </div>
+            <div class="detail-section">
+                <h4>Téléphone</h4>
+                <p>${app.phone}</p>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>Adresse</h4>
+            <p>${app.address}</p>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h4>Logement</h4>
+                <p>${app.housing_type}</p>
+            </div>
+            <div class="detail-section">
+                <h4>Statut</h4>
+                <p><span class="badge ${app.status}">${app.status}</span></p>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>Situation</h4>
+            <p>
+                ${app.has_garden ? "✅ Jardin" : "❌ Pas de jardin"} &nbsp;
+                ${app.has_children ? "✅ Enfants" : "❌ Pas d'enfants"} &nbsp;
+                ${app.has_other_pets ? "✅ Autres animaux" : "❌ Pas d'autres animaux"} &nbsp;
+                ${app.first_cat ? "✅ Premier chat" : "❌ Pas son premier chat"}
+            </p>
+        </div>
+
+        ${app.motivation ? `
+        <div class="detail-section">
+            <h4>Motivation</h4>
+            <p>${app.motivation}</p>
+        </div>
+        ` : ""}
+
+        <div class="detail-section">
+            <h4>Date de candidature</h4>
+            <p>${new Date(app.created_at).toLocaleDateString("fr-FR")}</p>
+        </div>
+    `
+    document.getElementById("modal-detail").classList.add("open")
+}
+
+function closeDetailModal() {
+    document.getElementById("modal-detail").classList.remove("open")
 }
 
 // Mettre à jour le statut d'un dossier
