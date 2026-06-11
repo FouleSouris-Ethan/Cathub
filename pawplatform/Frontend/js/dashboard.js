@@ -2,6 +2,9 @@
 const token = localStorage.getItem("token")
 const orgId = localStorage.getItem("org_id")
 
+let currentFilter = "tous" // Filtre actuel pour les chats
+let allCatsCache = [] // Cache pour tous les chats
+
 if (!token || !orgId) {
     window.location.href = "login.html"
 }
@@ -28,13 +31,25 @@ function closeModal() { document.getElementById("modal").classList.remove("open"
 
 // Chargement des chats
 async function loadCats() {
-    const cats = await api.getCats(orgId)
+    allCatsCache = await api.getCats(orgId) // Met à jour le cache
+    renderCats(allCatsCache) // Affiche tous les chats
+}
+
+function renderCats(cats) {
     const tbody = document.getElementById("cats-list")
-    if (cats.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5">Aucun chat pour l'instant</td></tr>`
+    if (!tbody) {
+        console.log("tbody introuvable")
         return
     }
-    tbody.innerHTML = cats.map(cat => `
+    const filtered = currentFilter === "tous"
+        ? cats
+        : cats.filter(c => c.status === currentFilter)
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">Aucun chat pour ce filtre</td></tr>`
+        return
+    }
+    tbody.innerHTML = filtered.map(cat => `
         <tr>
             <td>${cat.name}</td>
             <td>${cat.age} ans</td>
@@ -42,12 +57,27 @@ async function loadCats() {
             <td>${cat.description || "—"}</td>
             <td><span class="badge ${cat.status}">${cat.status}</span></td>
             <td>
+                <button class="action-btn" onclick="openEditModal('${cat.id}')">
+                    Modifier
+                </button>
                 <button class="action-btn danger" onclick="handleDeleteCat('${cat.id}')">
                     Supprimer
                 </button>
             </td>
         </tr>
     `).join("")
+}
+
+function filterCats(status) {
+    currentFilter = status
+
+    // Met à jour le bouton actif
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.classList.remove("active")
+    })
+    event.target.classList.add("active")
+
+    renderCats(allCatsCache) // Affiche les chats filtrés à partir du cache
 }
 
 // Créer un chat
@@ -65,6 +95,43 @@ async function handleCreateCat() {
         loadCats()
     } catch (e) {
         alert("Erreur lors de la création")
+    }
+}
+
+// Ouvrir modal de modification
+async function openEditModal(catId) {
+    const allCats = await api.getCats(orgId)
+    const foundCat = allCats.find(c => c.id === catId)
+
+    document.getElementById("edit-cat-id").value = foundCat.id
+    document.getElementById("edit-cat-name").value = foundCat.name
+    document.getElementById("edit-cat-age").value = foundCat.age
+    document.getElementById("edit-cat-race").value = foundCat.race || ""
+    document.getElementById("edit-cat-description").value = foundCat.description || ""
+    document.getElementById("edit-cat-status").value = foundCat.status
+    document.getElementById("modal-edit").classList.add("open")
+}
+
+function closeEditModal() {
+    document.getElementById("modal-edit").classList.remove("open")
+}
+
+// Enregistrer les modifications d'un chat
+async function handleUpdateCat() {
+    const catId = document.getElementById("edit-cat-id").value
+    const cat = {
+        name: document.getElementById("edit-cat-name").value,
+        age: parseInt(document.getElementById("edit-cat-age").value),
+        race: document.getElementById("edit-cat-race").value || null,
+        description: document.getElementById("edit-cat-description").value || null,
+        status: document.getElementById("edit-cat-status").value
+    }
+    try {
+        await api.UpdateCat(orgId, catId, cat)
+        closeEditModal()
+        loadCats()
+    } catch (e) {
+        alert("Erreur lors de la mise à jour")
     }
 }
 
@@ -117,5 +184,6 @@ async function handleUpdateStatus(appId, status) {
     }
 }
 
-// Chargement initial
-loadCats()
+document.addEventListener("DOMContentLoaded", () => {
+    loadCats()
+})

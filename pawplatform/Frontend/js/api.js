@@ -64,6 +64,16 @@ const api = {
         return response.json()
     },
 
+    async UpdateCat(orgId, catId, cat) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/cats/${catId}`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify(cat)
+        })
+        if (!response.ok) throw new Error("Erreur mise à jour")
+        return response.json()
+    },
+
     async updateApplicationStatus(orgId, appId, status) {
         const response = await fetch(`${API_URL}/organizations/${orgId}/applications/${appId}`, {
             method: "PUT",
