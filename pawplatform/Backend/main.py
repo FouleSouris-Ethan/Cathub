@@ -67,6 +67,67 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# Routes Users
+@app.get("/organizations/{org_id}/users", response_model=list[UserSchema])
+def list_users(
+    org_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+    ):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    return db.query(User).filter(User.organization_id == org_id).all()
+
+@app.post("/organizations/{org_id}/users", response_model=UserSchema)
+def create_user(
+    org_id: str,
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+    ):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+    new_user = User(
+        email=user.email,
+        hashed_password=hash_password(user.password),
+        is_admin=user.is_admin,
+        organization_id=org_id
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@app.delete("/organizations/{org_id}/users/{user_id}")
+def delete_user(
+    org_id: str,
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+    ):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    if current_user.id == user_id:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas vous supprimer vous-même")
+    user = db.query(User).filter(
+        User.id == user_id,
+        User.organization_id == org_id
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    db.delete(user)
+    db.commit()
+    return {"message": "Bénévole supprimé"}
+
 
 # Routes Organization
 @app.post("/organizations/", response_model=OrgSchema)

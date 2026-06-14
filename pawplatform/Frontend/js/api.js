@@ -31,6 +31,34 @@ const api = {
         return response.json()
     },
 
+    async getUsers(orgId) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/users`, {
+            headers: authHeaders()
+    })
+        if (!response.ok) throw new Error("Erreur chargement bénévoles")
+    return response.json()
+    },
+
+    async createUser(orgId, user) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/users`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(user)
+    })
+        if (!response.ok) throw new Error("Erreur création bénévole")
+        return response.json()
+    },
+
+    async deleteUser(orgId, userId) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/users/${userId}`, {
+            method: "DELETE",
+            headers: authHeaders()
+    })
+        if (!response.ok) throw new Error("Erreur suppression bénévole")
+        return response.json()
+    },
+
+
     // Chats
     async getCats(orgId) {
         const response = await fetch(`${API_URL}/organizations/${orgId}/cats`, {

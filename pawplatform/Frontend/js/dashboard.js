@@ -4,6 +4,7 @@ const orgId = localStorage.getItem("org_id")
 
 let currentFilter = "tous" // Filtre actuel pour les chats
 let allCatsCache = [] // Cache pour tous les chats
+let currentUser = null //Stocke les infos de l'utilisateur connecté
 
 if (!token || !orgId) {
     window.location.href = "login.html"
@@ -13,10 +14,18 @@ if (!token || !orgId) {
 function showTab(tab) {
     document.getElementById("tab-cats").style.display = tab === "cats" ? "block" : "none"
     document.getElementById("tab-applications").style.display = tab === "applications" ? "block" : "none"
+    document.getElementById("tab-users").style.display = tab === "users" ? "block" : "none"
+
     document.querySelectorAll(".tab").forEach((t, i) => {
-        t.classList.toggle("active", (i === 0 && tab === "cats") || (i === 1 && tab === "applications"))
+        t.classList.toggle("active",
+            (i === 0 && tab === "cats") || 
+            (i === 1 && tab === "applications") ||
+            (i === 2 && tab === "users")
+        )
     })
+
     if (tab === "applications") loadApplications()
+    if (tab === "users") loadUsers()
 }
 
 // Déconnexion
@@ -28,6 +37,79 @@ function logout() {
 // Modal
 function openModal() { document.getElementById("modal").classList.add("open") }
 function closeModal() { document.getElementById("modal").classList.remove("open") }
+
+//Chargement des infos de l'utilisateur connecté 
+async function init(){
+    currentUser =  await api.getMe()
+
+    //Affiche l'onglet bénévoles uniquement pour les admins
+    if (currentUser.is_admin) {
+        document.getElementById("tab-btn-users").style.display = "block"
+    }
+    loadCats()
+}
+
+// Modal bénévoles
+function openUserModal() {
+    document.getElementById("modal-user").classList.add("open")
+}
+function closeUserModal() {
+    document.getElementById("modal-user").classList.remove("open")
+}
+
+// Charger les bénévoles
+async function loadUsers() {
+    const users = await api.getUsers(orgId)
+    const tbody = document.getElementById("users-list")
+    if (users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">Aucun bénévole pour l'instant</td></tr>`
+        return
+    }
+    tbody.innerHTML = users.map(user => `
+        <tr>
+            <td>${user.email}</td>
+            <td>${user.is_admin ? "👑 Admin" : "🙋 Bénévole"}</td>
+            <td>
+                ${user.id !== currentUser.id ? `
+                    <button class="action-btn danger" onclick="handleDeleteUser('${user.id}')">
+                        Supprimer
+                    </button>
+                ` : "—"}
+            </td>
+        </tr>
+    `).join("")
+}
+
+// Créer un bénévole
+async function handleCreateUser() {
+    const user = {
+        email: document.getElementById("user-email").value,
+        password: document.getElementById("user-password").value,
+        is_admin: document.getElementById("user-is-admin").checked
+    }
+    if (!user.email || !user.password) {
+        alert("Merci de remplir tous les champs.")
+        return
+    }
+    try {
+        await api.createUser(orgId, user)
+        closeUserModal()
+        loadUsers()
+    } catch(e) {
+        alert("Erreur lors de la création du bénévole.")
+    }
+}
+
+// Supprimer un bénévole
+async function handleDeleteUser(userId) {
+    if (!confirm("Supprimer ce bénévole ?")) return
+    try {
+        await api.deleteUser(orgId, userId)
+        loadUsers()
+    } catch(e) {
+        alert("Erreur lors de la suppression.")
+    }
+}
 
 // Chargement des chats
 async function loadCats() {
@@ -258,6 +340,14 @@ async function handleUpdateStatus(appId, status) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+async function init() {
+    currentUser = await api.getMe()
+    if (currentUser.is_admin) {
+        document.getElementById("tab-btn-users").style.display = "block"
+    }
     loadCats()
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    init()
 })

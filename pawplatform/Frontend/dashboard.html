@@ -184,6 +184,8 @@
     <div class="tabs">
         <button class="tab active" onclick="showTab('cats')">🐱 Chats</button>
         <button class="tab" onclick="showTab('applications')">📋 Dossiers</button>
+        <button class="tab" id="tab-btn-users" onclick="showTab('users')" style="display:none">👥 Bénévoles</button>
+
     </div>
 
     <div class="content">
@@ -237,62 +239,102 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Modal détail dossier -->
-    <div class="modal-overlay" id="modal-detail">
-        <div class="modal">
-            <h3>Dossier d'adoption</h3>
-       
-            <div id="detail-content"></div>
+            <!-- Onglet Bénévoles -->
+        <div id="tab-users" style="display:none">
+                <div class="toolbar">
+                    <h2>Bénévoles</h2>
+                    <button class="btn-primary" onclick="openUserModal()">+ Ajouter un bénévole</button>
+                </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-list">
+                    <tr><td colspan="3">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeDetailModal()">Fermer</button>
+        <!-- Modal ajout bénévole -->
+        <div class="modal-overlay" id="modal-user">
+            <div class="modal">
+                <h3>Ajouter un bénévole</h3>
+                <label>Email</label>
+                <input type="email" id="user-email" placeholder="benevole@asso.fr" />
+                <label>Mot de passe</label>
+                <input type="password" id="user-password" placeholder="••••••••" />
+                <label>
+                    <input type="checkbox" id="user-is-admin" />
+                    Administrateur
+                </label>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeUserModal()">Annuler</button>
+                    <button class="btn-primary" onclick="handleCreateUser()">Ajouter</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal ajout chat -->
-    <div class="modal-overlay" id="modal">
-        <div class="modal">
-            <h3>Ajouter un chat</h3>
-            <label>Nom</label>
-            <input type="text" id="cat-name" placeholder="Moka" />
-            <label>Âge (années)</label>
-            <input type="number" id="cat-age" placeholder="2" />
-            <label>Race</label>
-            <input type="text" id="cat-race" placeholder="Européen" />
-            <label>Description</label>
-            <input type="text" id="cat-description" placeholder="Très câlin..." />
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeModal()">Annuler</button>
-                <button class="btn-primary" onclick="handleCreateCat()">Ajouter</button>
+
+        <!-- Modal détail dossier -->
+        <div class="modal-overlay" id="modal-detail">
+            <div class="modal">
+                <h3>Dossier d'adoption</h3>
+        
+                <div id="detail-content"></div>
+
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeDetailModal()">Fermer</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal modfication d'un chat-->
-    <div class="modal-overlay" id="modal-edit">
-        <div class="modal">
-            <h3>Modifier un chat</h3>
-            <input type="hidden" id="edit-cat-id" />
-            <label>Nom</label>
-            <input type="text" id="edit-cat-name" placeholder="Moka" />
-            <label>Âge (années)</label>
-            <input type="number" id="edit-cat-age" placeholder="2" />
-            <label>Race</label>
-            <input type="text" id="edit-cat-race" placeholder="Européen" />
-            <label>Description</label>
-            <input type="text" id="edit-cat-description" placeholder="Très câlin..." />
-            <label>Statut</label>
-            <select id="edit-cat-status">
-                <option value="disponible">Disponible</option>
-                <option value="réservé">Réservé</option>
-                <option value="adopté">Adopté</option>
-            </select>
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
-                <button class="btn-primary" onclick="handleUpdateCat()">Enregistrer</button>
+        <!-- Modal ajout chat -->
+        <div class="modal-overlay" id="modal">
+            <div class="modal">
+                <h3>Ajouter un chat</h3>
+                <label>Nom</label>
+                <input type="text" id="cat-name" placeholder="Moka" />
+                <label>Âge (années)</label>
+                <input type="number" id="cat-age" placeholder="2" />
+                <label>Race</label>
+                <input type="text" id="cat-race" placeholder="Européen" />
+                <label>Description</label>
+                <input type="text" id="cat-description" placeholder="Très câlin..." />
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+                    <button class="btn-primary" onclick="handleCreateCat()">Ajouter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal modfication d'un chat-->
+        <div class="modal-overlay" id="modal-edit">
+            <div class="modal">
+                <h3>Modifier un chat</h3>
+                <input type="hidden" id="edit-cat-id" />
+                <label>Nom</label>
+                <input type="text" id="edit-cat-name" placeholder="Moka" />
+                <label>Âge (années)</label>
+                <input type="number" id="edit-cat-age" placeholder="2" />
+                <label>Race</label>
+                <input type="text" id="edit-cat-race" placeholder="Européen" />
+                <label>Description</label>
+                <input type="text" id="edit-cat-description" placeholder="Très câlin..." />
+                <label>Statut</label>
+                <select id="edit-cat-status">
+                    <option value="disponible">Disponible</option>
+                    <option value="réservé">Réservé</option>
+                    <option value="adopté">Adopté</option>
+                </select>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
+                    <button class="btn-primary" onclick="handleUpdateCat()">Enregistrer</button>
+                </div>
             </div>
         </div>
     </div>
