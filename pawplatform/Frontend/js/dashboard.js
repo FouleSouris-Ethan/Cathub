@@ -38,6 +38,7 @@ function logout() {
 function openModal() { document.getElementById("modal").classList.add("open") }
 function closeModal() { document.getElementById("modal").classList.remove("open") }
 
+
 //Chargement des infos de l'utilisateur connecté 
 async function init(){
     currentUser =  await api.getMe()
@@ -46,6 +47,26 @@ async function init(){
     if (currentUser.is_admin) {
         document.getElementById("tab-btn-users").style.display = "block"
     }
+
+    // Prévisualisation photo ajout
+    document.getElementById("cat-photo").addEventListener("change", function() {
+        const file = this.files[0]
+        if (file) {
+            const preview = document.getElementById("cat-photo-preview")
+            preview.src = URL.createObjectURL(file)
+            preview.style.display = "block"
+        }
+    })
+    // Prévisualisation photo modification
+    document.getElementById("edit-cat-photo").addEventListener("change", function() {
+        const file = this.files[0]
+        if (file) {
+            const preview = document.getElementById("edit-cat-photo-preview")
+            preview.src = URL.createObjectURL(file)
+            preview.style.display = "block"
+        }
+    })
+
     loadCats()
 }
 
@@ -133,6 +154,7 @@ function renderCats(cats) {
     }
     tbody.innerHTML = filtered.map(cat => `
         <tr>
+            <td>${cat.photo_url ? `<img src="${cat.photo_url}" style="width:50px; height:50px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="openPhotoModal('${cat.photo_url}')">` : "—"}</td>
             <td>${cat.name}</td>
             <td>${cat.age} ans</td>
             <td>${cat.race || "—"}</td>
@@ -164,12 +186,25 @@ function filterCats(status) {
 
 // Créer un chat
 async function handleCreateCat() {
+    let photo_url = null
+    const photoFile = document.getElementById("cat-photo").files[0]
+   
+    if (photoFile) {
+        try {
+            photo_url = await api.uploadPhoto(photoFile)
+        } catch(e) {
+            alert("Erreur lors de l'upload de la photo.")
+            return
+        }
+    }
+
     const cat = {
         name: document.getElementById("cat-name").value,
         age: parseInt(document.getElementById("cat-age").value),
         race: document.getElementById("cat-race").value || null,
         description: document.getElementById("cat-description").value || null,
-        status: "disponible"
+        status: "disponible",
+        photo_url: photo_url
     }
     try {
         await api.createCat(orgId, cat)
@@ -180,42 +215,82 @@ async function handleCreateCat() {
     }
 }
 
+// Ouvrir la photo en grand et la fermer
+function openPhotoModal(url) { 
+    document.getElementById("photo-modal-img").src = url 
+    document.getElementById("modal-photo").classList.add("open") 
+} 
+
+function closePhotoModal() { 
+    document.getElementById("modal-photo").classList.remove("open") 
+}
+
+
+
+
 // Ouvrir modal de modification
 async function openEditModal(catId) {
     const allCats = await api.getCats(orgId)
     const foundCat = allCats.find(c => c.id === catId)
 
-    document.getElementById("edit-cat-id").value = foundCat.id
+    const editId = document.getElementById("edit-cat-id")
+    editId.value = foundCat.id
+    editId.dataset.currentPhoto = foundCat.photo_url || ""
+
     document.getElementById("edit-cat-name").value = foundCat.name
     document.getElementById("edit-cat-age").value = foundCat.age
     document.getElementById("edit-cat-race").value = foundCat.race || ""
     document.getElementById("edit-cat-description").value = foundCat.description || ""
     document.getElementById("edit-cat-status").value = foundCat.status
+
+    // Affiche la photo actuelle si elle existe
+    const preview = document.getElementById("edit-cat-photo-preview")
+    if (foundCat.photo_url) {
+        preview.src = foundCat.photo_url
+        preview.style.display = "block"
+    } else {
+        preview.style.display = "none"
+    }
+
     document.getElementById("modal-edit").classList.add("open")
 }
 
 function closeEditModal() {
-    document.getElementById("modal-edit").classList.remove("open")
+    document.getElementById("modal-edit").classList.remove("open") 
 }
 
 // Enregistrer les modifications d'un chat
 async function handleUpdateCat() {
+    let photo_url = document.getElementById("edit-cat-id").dataset.currentPhoto || null
+    const photoFile = document.getElementById("edit-cat-photo").files[0]
+
+    if (photoFile) {
+        try {
+            photo_url = await api.uploadPhoto(photoFile)
+        } catch(e) {
+            alert("Erreur lors de l'upload de la photo.")
+            return
+        }
+    }
+
     const catId = document.getElementById("edit-cat-id").value
     const cat = {
         name: document.getElementById("edit-cat-name").value,
         age: parseInt(document.getElementById("edit-cat-age").value),
         race: document.getElementById("edit-cat-race").value || null,
         description: document.getElementById("edit-cat-description").value || null,
-        status: document.getElementById("edit-cat-status").value
+        status: document.getElementById("edit-cat-status").value,
+        photo_url: photo_url
     }
     try {
         await api.UpdateCat(orgId, catId, cat)
         closeEditModal()
         loadCats()
-    } catch (e) {
-        alert("Erreur lors de la mise à jour")
+    } catch(e) {
+        alert("Erreur lors de la modification")
     }
 }
+
 
 // Supprimer un chat
 async function handleDeleteCat(catId) {

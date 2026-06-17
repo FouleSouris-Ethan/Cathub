@@ -86,6 +86,20 @@ const api = {
         return response.json()
     },
 
+    async uploadPhoto(file) {
+        const formData = new FormData()
+            formData.append("file", file)
+            formData.append("upload_preset", "pawplatform_preset")
+
+        const response = await fetch("https://api.cloudinary.com/v1_1/ddmrhqj8u/image/upload", {
+            method: "POST",
+            body: formData
+        })
+        if (!response.ok) throw new Error("Erreur upload photo")
+        const data = await response.json()
+        return data.secure_url
+    },
+
     // Dossiers
     async getApplications(orgId) {
         const response = await fetch(`${API_URL}/organizations/${orgId}/applications`, {

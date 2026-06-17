@@ -61,6 +61,7 @@ class CatCreate(BaseModel):
     race: Optional[str] = None
     description: Optional[str] = None
     status: str = "disponible"  # disponible, réservé, adopté
+    photo_url: Optional[str] = None
 
 class Cat(CatCreate):
     id: str

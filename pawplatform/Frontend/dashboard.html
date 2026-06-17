@@ -205,6 +205,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Photo</th>
                         <th>Nom</th>
                         <th>Âge</th>
                         <th>Race</th>
@@ -305,11 +306,21 @@
                 <input type="text" id="cat-race" placeholder="Européen" />
                 <label>Description</label>
                 <input type="text" id="cat-description" placeholder="Très câlin..." />
+                <label>Photo</label>
+                <input type="file" id="cat-photo" accept="image/*" />
+                <img id="cat-photo-preview" src="" style="display:none; width:100%; border-radius:8px; margin-bottom:1rem; " />
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeModal()">Annuler</button>
                     <button class="btn-primary" onclick="handleCreateCat()">Ajouter</button>
                 </div>
             </div>
+        </div>
+
+        <!-- Modal photo --> 
+        <div class="modal-overlay" id="modal-photo" onclick="closePhotoModal()"> 
+            <div style="max-width:600px; width:90%;"> 
+                <img id="photo-modal-img" src="" style="width:100%; border-radius:12px;"> 
+            </div> 
         </div>
 
         <!-- Modal modfication d'un chat-->
@@ -331,6 +342,9 @@
                     <option value="réservé">Réservé</option>
                     <option value="adopté">Adopté</option>
                 </select>
+                <label>Photo</label>
+                <input type="file" id="edit-cat-photo" accept="image/*" />
+                <img id="edit-cat-photo-preview" src="" style="display:none; width:100%; border-radius:8px; margin-bottom:1rem; " />
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
                     <button class="btn-primary" onclick="handleUpdateCat()">Enregistrer</button>
