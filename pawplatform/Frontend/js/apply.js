@@ -16,6 +16,10 @@ async function loadCatInfo() {
             return
         }
         document.getElementById("cat-info").innerHTML = `
+            ${cat.photo_url
+                ? `<img src="${cat.photo_url}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">`
+                : ""
+            }
             <h3>🐱 ${cat.name}</h3>
             <p>${cat.age} ans — ${cat.race || "Race non précisée"}</p>
             <p>${cat.description || ""}</p>

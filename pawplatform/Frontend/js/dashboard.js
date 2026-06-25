@@ -164,12 +164,35 @@ function renderCats(cats) {
                 <button class="action-btn" onclick="openEditModal('${cat.id}')">
                     Modifier
                 </button>
+                <button class="action-btn" onclick="shareCat('${cat.id}', '${cat.name}')">
+                    Partager
+                </button>
                 <button class="action-btn danger" onclick="handleDeleteCat('${cat.id}')">
                     Supprimer
                 </button>
             </td>
         </tr>
     `).join("")
+}
+
+function shareCat(catId, catName) {
+    const link = `${window.location.origin}/apply.html?cat=${catId}&org=${orgId}`
+   
+    navigator.clipboard.writeText(link).then(() => {
+        alert(`Lien copié pour ${catName} !\n\n${link}`)
+    }).catch(() => {
+        prompt(`Lien pour ${catName} (Ctrl+C pour copier) :`, link)
+    })
+}
+
+function shareAllCats() {
+    const link = `${window.location.origin}/cats.html?org=${orgId}`
+   
+    navigator.clipboard.writeText(link).then(() => {
+        alert(`Lien copié !\n\n${link}`)
+    }).catch(() => {
+        prompt(`Lien (Ctrl+C pour copier) :`, link)
+    })
 }
 
 function filterCats(status) {
@@ -306,13 +329,19 @@ async function handleDeleteCat(catId) {
 // Chargement des dossiers
 async function loadApplications() {
     const apps = await api.getApplications(orgId)
+    const cats = await api.getCats(orgId)
     const tbody = document.getElementById("applications-list")
     if (apps.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5">Aucun dossier pour l'instant</td></tr>`
         return
     }
-    tbody.innerHTML = apps.map(app => `
+    tbody.innerHTML = apps.map(app => {
+        const cat = cats.find(c => c.id === app.cat_id)
+        const catName = cat ? cat.name : "Chat introuvable"
+
+        return `
         <tr>
+            <td> 🐱 ${catName}</td>
             <td>${app.first_name} ${app.last_name}</td>
             <td>${app.email}</td>
             <td>${app.housing_type}</td>
@@ -331,16 +360,22 @@ async function loadApplications() {
                 ` : "-"}
             </td>
         </tr>
-    `).join("")
+    `}).join("")
 }
 
 // Voir le detail d'un dossier
 async function openDetailModal(appId) {
     const apps= await api.getApplications(orgId)
     const app = apps.find(a => a.id == appId)
+    const cats = await api.getCats(orgId)
+    const cat = cats.find(c => c.id === app.cat_id)
 
     const content = document.getElementById("detail-content")
     content.innerHTML = `
+        <div class="detail-section">
+            <h4>Chat concerné</h4>
+            <p>🐱 ${cat ? cat.name : "Chat introuvable"}</p>
+        </div>
         <div class="detail-grid">
             <div class="detail-section">
                 <h4>Prénom</h4>

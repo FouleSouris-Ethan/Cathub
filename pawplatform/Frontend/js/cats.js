@@ -23,6 +23,10 @@ async function loadPublicCats() {
 
         grid.innerHTML = available.map(cat => `
             <div class="cat-card">
+                ${cat.photo_url
+                    ? `<img src="${cat.photo_url}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">`
+                    : `<div style="width:100%; height:200px; background:#eee; border-radius:8px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center; font-size:3rem;">🐱</div>`
+                }
                 <h3>🐱 ${cat.name}</h3>
                 <span class="badge disponible">Disponible</span>
                 <p><strong>Âge :</strong> ${cat.age} ans</p>
