@@ -175,10 +175,33 @@ function renderCats(cats) {
     `).join("")
 }
 
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text)
+    }
+
+    const textarea = document.createElement("textarea")
+    textarea.value = text
+    textarea.style.position = "fixed"
+    textarea.style.opacity = "0"
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+
+    const copied = document.execCommand("copy")
+    document.body.removeChild(textarea)
+
+    if (!copied) {
+        return Promise.reject()
+    }
+
+    return Promise.resolve()
+}
+
 function shareCat(catId, catName) {
     const link = `${window.location.origin}/apply.html?cat=${catId}&org=${orgId}`
-   
-    navigator.clipboard.writeText(link).then(() => {
+
+    copyToClipboard(link).then(() => {
         alert(`Lien copié pour ${catName} !\n\n${link}`)
     }).catch(() => {
         prompt(`Lien pour ${catName} (Ctrl+C pour copier) :`, link)
@@ -187,8 +210,8 @@ function shareCat(catId, catName) {
 
 function shareAllCats() {
     const link = `${window.location.origin}/cats.html?org=${orgId}`
-   
-    navigator.clipboard.writeText(link).then(() => {
+
+    copyToClipboard(link).then(() => {
         alert(`Lien copié !\n\n${link}`)
     }).catch(() => {
         prompt(`Lien (Ctrl+C pour copier) :`, link)
