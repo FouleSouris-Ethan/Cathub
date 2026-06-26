@@ -355,16 +355,29 @@ async function loadApplications() {
     const cats = await api.getCats(orgId)
     const tbody = document.getElementById("applications-list")
     if (apps.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5">Aucun dossier pour l'instant</td></tr>`
+        tbody.innerHTML = `<tr><td colspan="6">Aucun dossier pour l'instant</td></tr>`
         return
     }
     tbody.innerHTML = apps.map(app => {
         const cat = cats.find(c => c.id === app.cat_id)
-        const catName = cat ? cat.name : "Chat introuvable"
+
+        const catCell = cat ? ` 
+            <div style="display:flex; align-items:center; gap:0.5rem;"> 
+                ${cat.photo_url
+                    ? `<img src="${cat.photo_url}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;">` 
+                    : `<span style="font-size:1.5rem;">🐱</span>` 
+                } 
+                <div>
+                    <div style="font-weight:500;">${cat.name}</div> 
+                    <div style="font-size:0.75rem; color:#666;">${cat.race || "Race inconnue"}, ${cat.age} ans</div> 
+                </div> 
+            </div>
+        ` : "Chat introuvable"
+
 
         return `
         <tr>
-            <td> 🐱 ${catName}</td>
+            <td>${catCell}</td>
             <td>${app.first_name} ${app.last_name}</td>
             <td>${app.email}</td>
             <td>${app.housing_type}</td>
@@ -395,10 +408,17 @@ async function openDetailModal(appId) {
 
     const content = document.getElementById("detail-content")
     content.innerHTML = `
-        <div class="detail-section">
-            <h4>Chat concerné</h4>
-            <p>🐱 ${cat ? cat.name : "Chat introuvable"}</p>
+        <div class="detail-section" style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+            ${cat && cat.photo_url
+                ? `<img src="${cat.photo_url}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">`
+                : `<span style="font-size:2.5rem;">🐱</span>`
+            }
+            <div>
+                <h4 style="margin-bottom:0.2rem;">Chat concerné</h4>
+                <p>${cat ? `${cat.name} — ${cat.race || "Race inconnue"}, ${cat.age} ans` : "Chat introuvable"}</p>
+            </div>
         </div>
+            
         <div class="detail-grid">
             <div class="detail-section">
                 <h4>Prénom</h4>

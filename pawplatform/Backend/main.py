@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from pawplatform.Backend.emails import send_application_status_email
 from .database import Base, get_db, engine
 from .models import AdoptionApplication, CatModel, OrganizationModel, User
 from .schemas import (
@@ -319,4 +319,13 @@ def update_application_status(
 
     db.commit()
     db.refresh(application)
+
+    # Envoi de l'email
+    if status_update.status in ["approuvé", "rejeté"]:
+        send_application_status_email(
+            to_email=application.email,
+            cat_name=cat.name,
+            status=status_update.status,
+            first_name=application.first_name
+        )
     return application
