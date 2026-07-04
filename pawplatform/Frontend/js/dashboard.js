@@ -7,7 +7,7 @@ let allCatsCache = [] // Cache pour tous les chats
 let currentUser = null //Stocke les infos de l'utilisateur connecté
 let allApplicationsCache = []
 let currentAppFilter = "actifs"
-let currentMedicalCatid = null
+let currentMedicalCatId = null
 
 
 if (!token || !orgId) {
