@@ -5,13 +5,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pawplatform.Backend.emails import send_application_status_email
 from .database import Base, get_db, engine
-from .models import AdoptionApplication, CatModel, OrganizationModel, User
+from .models import AdoptionApplication, CatModel, OrganizationModel, User, MedicalRecord
 from .schemas import (
     Application, ApplicationCreate, ApplicationStatusUpdate,
     Cat, CatCreate,
     OrganizationCreate, Organization as OrgSchema,
     Token,
     UserCreate, User as UserSchema,
+    MedicalRecordCreate, MedicalRecordSchema
 )
 from .auth import (
     create_access_token, get_current_user,
@@ -165,6 +166,10 @@ def create_cat(
 ):
     if current_user.organization_id != org_id:
         raise HTTPException(status_code=403, detail="Accès interdit à cette organisation")
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Accès réservé aux admins")
     org = db.query(OrganizationModel).filter(OrganizationModel.id == org_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organisation introuvable")
@@ -223,6 +228,11 @@ def delete_cat(org_id: str, cat_id: str, db: Session = Depends(get_db), current_
     ).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Cat introuvable")
+    
+    #
+    db.query(MedicalRecord).filter(
+        MedicalRecord.cat_id == cat_id).delete()
+
     db.delete(cat)
     db.commit()
     return {"message": "Cat supprimé avec succès"}
@@ -329,3 +339,67 @@ def update_application_status(
             first_name=application.first_name
         )
     return application
+
+@app.get("/organizations/{org_id}/cats/{cat_id}/medical-records", response_model=list[MedicalRecordSchema])
+def list_medical_records(
+    org_id: str,
+    cat_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+    return db.query(MedicalRecord).filter(
+    MedicalRecord.cat_id == cat_id,
+    MedicalRecord.organization_id == org_id
+    ).order_by(MedicalRecord.record_date.desc()).all()
+
+@app.post("/organizations/{org_id}/cats/{cat_id}/medical-records", response_model=MedicalRecordSchema)
+def create_medical_record(
+    org_id: str,
+    cat_id: str,
+    record: MedicalRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+
+    cat = db.query(CatModel).filter(CatModel.id == cat_id, CatModel.organization_id == org_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Chat introuvable")
+
+    new_record = MedicalRecord(
+        **record.dict(),
+        cat_id=cat_id,
+        organization_id=org_id,
+        created_by=current_user.email,
+        created_at=datetime.utcnow().isoformat()
+    )
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+    return new_record
+
+@app.delete("/organizations/{org_id}/cats/{cat_id}/medical-records/{record_id}")
+def delete_medical_record(
+    org_id: str,
+    cat_id: str,
+    record_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Accès interdit")
+
+    record = db.query(MedicalRecord).filter(
+        MedicalRecord.id == record_id,
+        MedicalRecord.cat_id == cat_id,
+        MedicalRecord.organization_id == org_id
+    ).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Enregistrement introuvable")
+
+    db.delete(record)
+    db.commit()
+    return {"message": "Enregistrement supprimé"}

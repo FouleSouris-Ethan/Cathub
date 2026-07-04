@@ -62,10 +62,29 @@ class CatCreate(BaseModel):
     description: Optional[str] = None
     status: str = "disponible"  # disponible, réservé, adopté
     photo_url: Optional[str] = None
+    is_sterilized: bool = False
+    is_vaccinated: bool = False
+    is_chipped: bool = False
+
 
 class Cat(CatCreate):
     id: str
     organization_id: str
+
+    class Config:
+        from_attributes = True
+
+class MedicalRecordCreate(BaseModel):
+    record_type: str
+    description: Optional[str] = None
+    record_date: str
+
+class MedicalRecordSchema(MedicalRecordCreate):
+    id: str
+    cat_id: str
+    organization_id: str
+    created_by: Optional[str] = None
+    created_at: str
 
     class Config:
         from_attributes = True

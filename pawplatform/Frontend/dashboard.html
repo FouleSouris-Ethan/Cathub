@@ -73,6 +73,11 @@
             border-bottom: 1px solid #eee;
         }
         td { padding: 0.75rem; border-bottom: 1px solid #f5f5f5; }
+        td.actions-cell {
+            white-space: nowrap;
+            min-width: 220px;
+            width: 220px;
+        }
 
         .badge {
             padding: 0.2rem 0.6rem;
@@ -172,6 +177,24 @@
             margin-bottom: 1rem;
         }
 
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap:0.5rem;
+            margin-bottom: 1rem;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
 
     </style>
 </head>
@@ -214,6 +237,7 @@
                         <th>Race</th>
                         <th>Description</th>
                         <th>Statut</th>
+                        <th>Médical</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -227,6 +251,13 @@
         <div id="tab-applications" style="display:none">
             <div class="toolbar">
                 <h2>Dossiers d'adoption</h2>
+            </div>
+            <div class="filters">
+                <button class="filter-btn app-filter active" onclick="filterApplications('actifs')">Actifs</button>
+                <button class="filter-btn app-filter" onclick="filterApplications('en attente')">En atente</button>
+                <button class="filter-btn app-filter" onclick="filterApplications('approuvé')">Approuvés</button>
+                <button class="filter-btn app-filter" onclick="filterApplications('rejeté')">Rejetés</button>
+                <button class="filter-btn app-filter" onclick="filterApplications('tous')">Tous</button>
             </div>
             <table>
                 <thead>
@@ -313,6 +344,21 @@
                 <label>Photo</label>
                 <input type="file" id="cat-photo" accept="image/*" />
                 <img id="cat-photo-preview" src="" style="display:none; width:100%; border-radius:8px; margin-bottom:1rem; " />
+                <label>Suivi médical</label>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="cat-sterilized" />
+                        Stérilisé / castré
+                    </label>
+                    <label>
+                        <input type="checkbox" id="cat-vaccinated" />
+                        Vacciné à jour
+                    </label>
+                    <label>
+                        <input type="checkbox" id="cat-chipped" />
+                        Pucé
+                    </label>
+                </div>
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeModal()">Annuler</button>
                     <button class="btn-primary" onclick="handleCreateCat()">Ajouter</button>
@@ -325,6 +371,39 @@
             <div style="max-width:600px; width:90%;"> 
                 <img id="photo-modal-img" src="" style="width:100%; border-radius:12px;"> 
             </div> 
+        </div>
+
+        <!-- Modal historique médical -->
+        <div class="modal-overlay" id="modal-medical">
+            <div class="modal" style="max-width:550px;">
+                <h3 id="medical-modal-title">Historique médical</h3>
+
+                <div id="medical-records-list" style="max-height:250px; overflow-y:auto; margin-bottom:1.5rem;">
+                    Chargement...
+                </div>
+
+                <hr style="border:none; border-top:1px solid #eee; margin-bottom:1.5rem;">
+
+                <label>Type d'événement</label>
+                <select id="medical-type">
+                    <option value="vaccin">Vaccin</option>
+                    <option value="vermifuge">Vermifuge</option>
+                    <option value="visite">Visite vétérinaire</option>
+                    <option value="traitement">Traitement</option>
+                    <option value="autre">Autre</option>
+                </select>
+
+                <label>Date</label>
+                <input type="date" id="medical-date" />
+
+                <label>Description</label>
+                <input type="text" id="medical-description" placeholder="Détails de l'événement..." />
+
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeMedicalModal()">Fermer</button>
+                    <button class="btn-primary" onclick="handleAddMedicalRecord()">Ajouter l'événement</button>
+                </div>
+            </div>
         </div>
 
         <!-- Modal modfication d'un chat-->
@@ -352,6 +431,21 @@
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
                     <button class="btn-primary" onclick="handleUpdateCat()">Enregistrer</button>
+                </div>
+                <label>Suivi médical</label>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="edit-cat-sterilized" />
+                        Stérilisé / castré
+                    </label>
+                    <label>
+                        <input type="checkbox" id="edit-cat-vaccinated" />
+                        Vacciné à jour
+                    </label>
+                    <label>
+                        <input type="checkbox" id="edit-cat-chipped" />
+                        Pucé
+                    </label>
                 </div>
             </div>
         </div>

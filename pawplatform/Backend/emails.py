@@ -1,7 +1,14 @@
-import resend
 import os
 
-resend.api_key = os.getenv("RESEND_API_KEY")
+try:
+    import resend
+except ImportError:  # pragma: no cover - dépendance optionnelle
+    resend = None
+
+resend_api_key = os.getenv("RESEND_API_KEY")
+if resend is not None:
+    resend.api_key = resend_api_key
+
 
 def send_application_status_email(to_email: str, cat_name: str, status: str, first_name: str):
     if status == "approuvé":
@@ -20,6 +27,10 @@ def send_application_status_email(to_email: str, cat_name: str, status: str, fir
         <p>Après étude de votre dossier, nous ne pouvons malheureusement pas donner suite à votre candidature pour cette adoption.</p>
         <p>N'hésitez pas à consulter nos autres chats disponibles à l'adoption.</p>
         """
+
+    if resend is None or not resend_api_key:
+        print("Email non envoyé : dépendance resend indisponible ou clé absente")
+        return False
 
     try:
         resend.Emails.send({

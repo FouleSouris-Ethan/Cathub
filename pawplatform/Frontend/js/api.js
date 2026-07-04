@@ -137,6 +137,33 @@ const api = {
         if (!response.ok) throw new Error("Erreur envoi dossier")
             return response.json()
     },
+
+    async getMedicalRecords(orgId, catId) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/cats/${catId}/medical-records`, {
+            headers: authHeaders()
+        })
+        if (!response.ok) throw new Error("Erreur chargement historique médical")
+        return response.json()
+    },
+
+    async createMedicalRecord(orgId, catId, record) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/cats/${catId}/medical-records`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(record)
+        })
+        if (!response.ok) throw new Error("Erreur ajout événement médical")
+        return response.json()
+    },
+
+    async deleteMedicalRecord(orgId, catId, recordId) {
+        const response = await fetch(`${API_URL}/organizations/${orgId}/cats/${catId}/medical-records/${recordId}`, {
+            method: "DELETE",
+            headers: authHeaders()
+        })
+        if (!response.ok) throw new Error("Erreur suppression événement médical")
+        return response.json()
+    },
 }
 
     

@@ -5,6 +5,10 @@ const orgId = localStorage.getItem("org_id")
 let currentFilter = "tous" // Filtre actuel pour les chats
 let allCatsCache = [] // Cache pour tous les chats
 let currentUser = null //Stocke les infos de l'utilisateur connecté
+let allApplicationsCache = []
+let currentAppFilter = "actifs"
+let currentMedicalCatid = null
+
 
 if (!token || !orgId) {
     window.location.href = "login.html"
@@ -41,31 +45,44 @@ function closeModal() { document.getElementById("modal").classList.remove("open"
 
 //Chargement des infos de l'utilisateur connecté 
 async function init(){
-    currentUser =  await api.getMe()
+    try {
+        currentUser = await api.getMe()
 
-    //Affiche l'onglet bénévoles uniquement pour les admins
-    if (currentUser.is_admin) {
-        document.getElementById("tab-btn-users").style.display = "block"
+        //Affiche l'onglet bénévoles uniquement pour les admins
+        if (currentUser.is_admin) {
+            document.getElementById("tab-btn-users").style.display = "block"
+        }
+    } catch (e) {
+        alert("Impossible de charger votre session. Veuillez vous reconnecter.")
+        logout()
+        return
     }
 
     // Prévisualisation photo ajout
-    document.getElementById("cat-photo").addEventListener("change", function() {
-        const file = this.files[0]
-        if (file) {
-            const preview = document.getElementById("cat-photo-preview")
-            preview.src = URL.createObjectURL(file)
-            preview.style.display = "block"
-        }
-    })
+    const catPhotoInput = document.getElementById("cat-photo")
+    if (catPhotoInput) {
+        catPhotoInput.addEventListener("change", function() {
+            const file = this.files[0]
+            if (file) {
+                const preview = document.getElementById("cat-photo-preview")
+                preview.src = URL.createObjectURL(file)
+                preview.style.display = "block"
+            }
+        })
+    }
+
     // Prévisualisation photo modification
-    document.getElementById("edit-cat-photo").addEventListener("change", function() {
-        const file = this.files[0]
-        if (file) {
-            const preview = document.getElementById("edit-cat-photo-preview")
-            preview.src = URL.createObjectURL(file)
-            preview.style.display = "block"
-        }
-    })
+    const editCatPhotoInput = document.getElementById("edit-cat-photo")
+    if (editCatPhotoInput) {
+        editCatPhotoInput.addEventListener("change", function() {
+            const file = this.files[0]
+            if (file) {
+                const preview = document.getElementById("edit-cat-photo-preview")
+                preview.src = URL.createObjectURL(file)
+                preview.style.display = "block"
+            }
+        })
+    }
 
     loadCats()
 }
@@ -80,25 +97,33 @@ function closeUserModal() {
 
 // Charger les bénévoles
 async function loadUsers() {
-    const users = await api.getUsers(orgId)
-    const tbody = document.getElementById("users-list")
-    if (users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3">Aucun bénévole pour l'instant</td></tr>`
-        return
+    try {
+        const users = await api.getUsers(orgId)
+        const tbody = document.getElementById("users-list")
+        if (users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3">Aucun bénévole pour l'instant</td></tr>`
+            return
+        }
+        tbody.innerHTML = users.map(user => `
+            <tr>
+                <td>${user.email}</td>
+                <td>${user.is_admin ? "👑 Admin" : "🙋 Bénévole"}</td>
+                <td>
+                    ${user.id !== currentUser.id ? `
+                        <button class="action-btn danger" onclick="handleDeleteUser('${user.id}')">
+                            Supprimer
+                        </button>
+                    ` : "—"}
+                </td>
+            </tr>
+        `).join("")
+    } catch (e) {
+        console.error("Erreur chargement bénévoles", e)
+        const tbody = document.getElementById("users-list")
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="3">Impossible de charger les bénévoles.</td></tr>`
+        }
     }
-    tbody.innerHTML = users.map(user => `
-        <tr>
-            <td>${user.email}</td>
-            <td>${user.is_admin ? "👑 Admin" : "🙋 Bénévole"}</td>
-            <td>
-                ${user.id !== currentUser.id ? `
-                    <button class="action-btn danger" onclick="handleDeleteUser('${user.id}')">
-                        Supprimer
-                    </button>
-                ` : "—"}
-            </td>
-        </tr>
-    `).join("")
 }
 
 // Créer un bénévole
@@ -134,8 +159,16 @@ async function handleDeleteUser(userId) {
 
 // Chargement des chats
 async function loadCats() {
-    allCatsCache = await api.getCats(orgId) // Met à jour le cache
-    renderCats(allCatsCache) // Affiche tous les chats
+    try {
+        allCatsCache = await api.getCats(orgId)
+        renderCats(allCatsCache)
+    } catch (e) {
+        console.error("Erreur chargement chats", e)
+        const tbody = document.getElementById("cats-list")
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="8">Impossible de charger les chats.</td></tr>`
+        }
+    }
 }
 
 function renderCats(cats) {
@@ -149,7 +182,7 @@ function renderCats(cats) {
         : cats.filter(c => c.status === currentFilter)
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6">Aucun chat pour ce filtre</td></tr>`
+        tbody.innerHTML = `<tr><td colspan="8">Aucun chat pour ce filtre</td></tr>`
         return
     }
     tbody.innerHTML = filtered.map(cat => `
@@ -161,6 +194,11 @@ function renderCats(cats) {
             <td>${cat.description || "—"}</td>
             <td><span class="badge ${cat.status}">${cat.status}</span></td>
             <td>
+                <button class="action-btn" onclick="openMedicalModal('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')">
+                    🩺 Voir
+                </button>
+            </td>
+            <td class="actions-cell">
                 <button class="action-btn" onclick="openEditModal('${cat.id}')">
                     Modifier
                 </button>
@@ -250,6 +288,9 @@ async function handleCreateCat() {
         race: document.getElementById("cat-race").value || null,
         description: document.getElementById("cat-description").value || null,
         status: "disponible",
+        is_sterilized: document.getElementById("cat-sterilized").checked,
+        is_vaccinated: document.getElementById("cat-vaccinated").checked,
+        is_chipped: document.getElementById("cat-chipped").checked,
         photo_url: photo_url
     }
     try {
@@ -288,6 +329,9 @@ async function openEditModal(catId) {
     document.getElementById("edit-cat-race").value = foundCat.race || ""
     document.getElementById("edit-cat-description").value = foundCat.description || ""
     document.getElementById("edit-cat-status").value = foundCat.status
+    document.getElementById("edit-cat-sterilized").checked = foundCat.is_sterilized
+    document.getElementById("edit-cat-vaccinated").checked = foundCat.is_vaccinated
+    document.getElementById("edit-cat-chipped").checked= foundCat.is_chipped
 
     // Affiche la photo actuelle si elle existe
     const preview = document.getElementById("edit-cat-photo-preview")
@@ -326,6 +370,9 @@ async function handleUpdateCat() {
         race: document.getElementById("edit-cat-race").value || null,
         description: document.getElementById("edit-cat-description").value || null,
         status: document.getElementById("edit-cat-status").value,
+        is_sterilized: document.getElementById("edit-cat-sterilized").checked,
+        is_vaccinated: document.getElementById("edit-cat-vaccinated").checked,
+        is_chipped: document.getElementById("edit-cat-chipped").checked,
         photo_url: photo_url
     }
     try {
@@ -351,52 +398,80 @@ async function handleDeleteCat(catId) {
 
 // Chargement des dossiers
 async function loadApplications() {
-    const apps = await api.getApplications(orgId)
-    const cats = await api.getCats(orgId)
+    try {
+        allApplicationsCache = await api.getApplications(orgId)
+        renderApplications(allApplicationsCache)
+    } catch (e) {
+        console.error("Erreur chargement dossiers", e)
+        const tbody = document.getElementById("applications-list")
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6">Impossible de charger les dossiers.</td></tr>`
+        }
+    }
+}
+
+function renderApplications(apps) {
     const tbody = document.getElementById("applications-list")
-    if (apps.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6">Aucun dossier pour l'instant</td></tr>`
+
+    let filtered
+    if (currentAppFilter === "tous") {
+        filtered = apps
+    } else if (currentAppFilter === "actifs") {
+        filtered = apps.filter(a => a.status !== "rejeté")
+    } else {
+        filtered = apps.filter(a => a.status === currentAppFilter)
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">Aucun dossier pour ce filtre</td></tr>`
         return
     }
-    tbody.innerHTML = apps.map(app => {
-        const cat = cats.find(c => c.id === app.cat_id)
 
-        const catCell = cat ? ` 
-            <div style="display:flex; align-items:center; gap:0.5rem;"> 
-                ${cat.photo_url
-                    ? `<img src="${cat.photo_url}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;">` 
-                    : `<span style="font-size:1.5rem;">🐱</span>` 
-                } 
-                <div>
-                    <div style="font-weight:500;">${cat.name}</div> 
-                    <div style="font-size:0.75rem; color:#666;">${cat.race || "Race inconnue"}, ${cat.age} ans</div> 
-                </div> 
-            </div>
-        ` : "Chat introuvable"
+    // On a besoin des chats pour afficher le nom/race/photo
+    api.getCats(orgId).then(cats => {
+        tbody.innerHTML = filtered.map(app => {
+            const cat = cats.find(c => c.id === app.cat_id)
+            const catCell = cat ? `
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    ${cat.photo_url
+                        ? `<img src="${cat.photo_url}" style="width:36px; height:36px; object-fit:cover; border-radius:6px;">`
+                        : `<span style="font-size:1.5rem;">🐱</span>`
+                    }
+                    <div>
+                        <div style="font-weight:500;">${cat.name}</div>
+                        <div style="font-size:0.75rem; color:#666;">${cat.race || "Race inconnue"}, ${cat.age} ans</div>   
+                    </div>
+                </div>
+            ` : "Chat introuvable"
 
+            return `
+            <tr>
+                <td>${catCell}</td>
+                <td>${app.first_name} ${app.last_name}</td>
+                <td>${app.email}</td>
+                <td>${app.housing_type}</td>
+                <td><span class="badge ${app.status}">${app.status}</span></td>
+                <td>
+                    <button class="action-btn" onclick="openDetailModal('${app.id}')">Voir</button>
+                    ${app.status === "en attente" ? `
+                        <button class="action-btn success" onclick="handleUpdateStatus('${app.id}', 'approuvé')">Valider</button>
+                        <button class="action-btn danger" onclick="handleUpdateStatus('${app.id}', 'rejeté')">Refuser</button>
+                    ` : "—"}
+                </td>
+            </tr>
+        `}).join("")
+    })
+}
 
-        return `
-        <tr>
-            <td>${catCell}</td>
-            <td>${app.first_name} ${app.last_name}</td>
-            <td>${app.email}</td>
-            <td>${app.housing_type}</td>
-            <td><span class="badge ${app.status}">${app.status}</span></td>
-            <td>
-                <button class="action-btn" onclick="openDetailModal('${app.id}')">
-                    Voir
-                </button>
-                ${app.status === "en attente" ? `
-                    <button class="action-btn success" onclick="handleUpdateStatus('${app.id}', 'approuvé')">
-                        Valider
-                    </button>
-                    <button class="action-btn danger" onclick="handleUpdateStatus('${app.id}', 'rejeté')">
-                        Refuser
-                    </button>
-                ` : "-"}
-            </td>
-        </tr>
-    `}).join("")
+function filterApplications(status) {
+    currentAppFilter = status
+
+    document.querySelectorAll(".app-filter").forEach(btn => {
+        btn.classList.remove("active")
+    })
+    event.target.classList.add("active")
+
+    renderApplications(allApplicationsCache)
 }
 
 // Voir le detail d'un dossier
@@ -499,6 +574,85 @@ async function init() {
         document.getElementById("tab-btn-users").style.display = "block"
     }
     loadCats()
+}
+
+// Ouvrir la modal historique médical
+async function openMedicalModal(catId, catName) {
+    currentMedicalCatId = catId
+    document.getElementById("medical-modal-title").textContent = `Historique médical — ${catName}`
+    document.getElementById("modal-medical").classList.add("open")
+    await loadMedicalRecords()
+}
+
+function closeMedicalModal() {
+    document.getElementById("modal-medical").classList.remove("open")
+    currentMedicalCatId = null
+}
+
+// Charger les événements
+async function loadMedicalRecords() {
+    const list = document.getElementById("medical-records-list")
+    list.innerHTML = "Chargement..."
+
+    const records = await api.getMedicalRecords(orgId, currentMedicalCatId)
+
+    if (records.length === 0) {
+        list.innerHTML = `<p style="color:#666; font-size:0.9rem;">Aucun événement enregistré.</p>`
+        return
+}
+
+    const typeLabels = {
+    vaccin: "💉 Vaccin",
+    vermifuge: "🪱 Vermifuge",
+    visite: "🩺 Visite vétérinaire",
+    traitement: "💊 Traitement",
+    autre: "📋 Autre"
+    }
+
+    list.innerHTML = records.map(r => `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:0.6rem 0; border-bottom:1px solid #f0f0f0;">
+            <div>
+                <div style="font-weight:500; font-size:0.9rem;">${typeLabels[r.record_type] || r.record_type}</div>
+                <div style="font-size:0.8rem; color:#666;">${new Date(r.record_date).toLocaleDateString("fr-FR")}</div>
+                ${r.description ? `<div style="font-size:0.85rem; margin-top:0.2rem;">${r.description}</div>` : ""}
+            </div>
+            <button class="action-btn danger" onclick="handleDeleteMedicalRecord('${r.id}')">Suppr.</button>
+        </div>
+    `).join("")
+}
+
+// Ajouter un événement
+async function handleAddMedicalRecord() {
+    const record = {
+        record_type: document.getElementById("medical-type").value,
+        description: document.getElementById("medical-description").value || null,
+        record_date: document.getElementById("medical-date").value
+    }
+
+    if (!record.record_date) {
+        alert("Merci de choisir une date.")
+        return
+    }
+
+    try {
+        await api.createMedicalRecord(orgId, currentMedicalCatId, record)
+        document.getElementById("medical-description").value = ""
+        document.getElementById("medical-date").value = ""
+        await loadMedicalRecords()
+    } catch(e) {
+        alert("Erreur lors de l'ajout de l'événement")
+    }
+}
+
+// Supprimer un événement
+async function handleDeleteMedicalRecord(recordId) {
+    if (!confirm("Supprimer cet événement ?")) return
+    try {
+        await api.deleteMedicalRecord(orgId, currentMedicalCatId, recordId)
+        await loadMedicalRecords()
+    } catch(e) {
+        alert("Erreur lors de la suppression")
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

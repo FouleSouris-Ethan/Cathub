@@ -65,5 +65,22 @@ class CatModel(Base):
     description = Column(String, nullable=True)
     status = Column(String, default="disponible")  # disponible, réservé, adopté
     organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
+    is_sterilized = Column(Boolean, default=False)
+    is_vaccinated = Column(Boolean, default=False)
+    is_chipped = Column(Boolean, default=False)
+    
 
     organization = relationship("OrganizationModel", back_populates="cats")
+
+class MedicalRecord(Base):
+    __tablename__ = "medical_records"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    cat_id = Column(String, ForeignKey("cats.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("organizations.id"), nullable=False)
+
+    record_type = Column(String, nullable=False) # vaccin / vermifuge / visite / traitement / autre
+    description = Column(String, nullable=True)
+    record_date = Column(String, nullable=False) # format ISO
+    created_by = Column(String, nullable=True) # email du bénévole
+    created_at = Column(String, nullable=False)
