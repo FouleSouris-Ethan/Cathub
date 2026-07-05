@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import RedirectResponse
@@ -24,7 +25,8 @@ from .auth import (
 app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
-app.mount("/static", StaticFiles(directory="../Frontend"), name="static")
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "Frontend"
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 @app.get("/")
 def root():
