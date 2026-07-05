@@ -1,7 +1,9 @@
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pawplatform.Backend.emails import send_application_status_email
 from .database import Base, get_db, engine
@@ -21,6 +23,12 @@ from .auth import (
 
 app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
+
+app.mount("/static", StaticFiles(directory="../Frontend"), name="static")
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/static/dashboard.html")
 
 app.add_middleware(
     CORSMiddleware,
